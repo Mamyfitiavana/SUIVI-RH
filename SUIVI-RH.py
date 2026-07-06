@@ -128,7 +128,7 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
         
         @st.dialog("➕ Hampiditra Mpiasa ao amin'ny Prod")
         def ampiditra_prod_form():
-            with st.form(key="form_prod_p2_v6", clear_on_submit=True):
+            with st.form(key="form_prod_p2_v6_fixed", clear_on_submit=True):
                 mat = st.text_input("Matricule *")
                 nom = st.text_input("Nom *")
                 prenom = st.text_input("Prénom *")
@@ -205,9 +205,12 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                                     
                                 op_type = str(row['Opérations']).strip().lower()
                                 
-                                # FIAROVANA: Avadika ho isa madio foana na dia soratra (Texte) aza ny tao amin'ny Excel
+                                # NAMBOARINA NY LOKALIN'NY KAJY DISO TEO (SyntaxError Fixed)
                                 try:
                                     act_value = int(float(str(row['Total actes']).strip()))
+                                except:
+                                    continue # Tsy raharahina raha misy andalana tsy misy isa
+                                    
                                 if "saisie" in op_type:
                                     s_current = act_value
                                 else:
@@ -253,7 +256,7 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
         
         @st.dialog("📝 Fampidirana Pointage Journalier Manuelle")
         def ampiditra_pointage_popup(actual_row_idx, mpiasa_anarana):
-            with st.form(key="form_popup_p2_v6_man", clear_on_submit=True):
+            with st.form(key="form_popup_p2_v6_man_fixed", clear_on_submit=True):
                 andro_voafidy = st.selectbox("Safidio ny Andro:", kalandrie_jolay)
                 val_saisie = st.number_input("Isa Saisie:", min_value=0, value=0, step=1)
                 val_comp = st.number_input("Isa Comparaison:", min_value=0, value=0, step=1)
