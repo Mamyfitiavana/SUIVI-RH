@@ -77,8 +77,9 @@ def convert_df_to_excel(df):
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False, sheet_name='Sheet1')
     return output.getvalue()
+
 # ==================================================================
-# PEJY 1 : SUIVI RH (VERSION ULTRA-PRO SYNC PROD & SAVE TO CSV)
+# PEJY 1 : SUIVI RH
 # ==================================================================
 if pejy_voafidy == "📊 SUIVI RH":
     st.title("📊 Rafitra Fitaovana Suivi RH - Jolay 2026")
@@ -182,7 +183,7 @@ if pejy_voafidy == "📊 SUIVI RH":
                 modifier_rh_popup(real_idx_rh)
 
 # ==================================================================
-# PEJY 2 : SUIVI PROD (TAPANY FAHATELO - TABILAO GLOBAL)
+# PEJY 2 : SUIVI PROD
 # ==================================================================
 elif pejy_voafidy == "⚙️ SUIVI PROD":
     st.title("⚙️ Rafitra Fitaovana Suivi Production - Jolay 2026")
@@ -191,7 +192,7 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
     df_prod_all = st.session_state.df_prod
     df_prod_filtered = df_prod_all[df_prod_all["CE / Département"] == ce_mpampiasa] if ce_mpampiasa != "ADMIN" else df_prod_all
 
-    # TABS ROA MIAVAKA TSARA (Tofoka ao anatin'ny lojika)
+    # TABS ROA MIAVAKA TSARA
     tab1, tab2 = st.tabs(["📋 TABILAO GLOBAL (Mijery ny Rehetra)", "📝 INTEGRATION & IMPORTATION EXCEL"])
 
     # --- TAB 1 : TABILAO GLOBAL ---
@@ -206,6 +207,7 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
 
         st.markdown("---")
         st.dataframe(df_prod_all, use_container_width=True, hide_index=True)
+        
     # --- TAB 2 : GESTION & IMPORTATION EXCEL ---
     with tab2:
         st.subheader("🚀 Fampidirana Pointage mandeha ho azy amin'ny Excel")
@@ -307,6 +309,7 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                     st.rerun()
                 except Exception as e:
                     st.error(f"Misy fahadisoana teo am-pamakiana ilay Excel: {str(e)}.")
+                    
         st.markdown("---")
         st.subheader("📋 Pointage tabilao feno")
         
@@ -330,8 +333,8 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                         if cell_value and "|" in str(cell_value):
                             try:
                                 parts = str(cell_value).split("|")
-                                total_saisie_mensuel += int(parts.replace(TAG_SAISIE, "").strip())
-                                total_comp_mensuel += int(parts.replace(TAG_COMP, "").strip())
+                                total_saisie_mensuel += int(parts[0].replace(TAG_SAISIE, "").strip())
+                                total_comp_mensuel += int(parts[1].replace(TAG_COMP, "").strip())
                             except: pass
                     st.session_state.df_prod.at[act_idx, "Total Mensuel (Saisie)"] = total_saisie_mensuel
                     st.session_state.df_prod.at[act_idx, "Total Mensuel (Comp)"] = total_comp_mensuel
@@ -366,12 +369,13 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                     st.success("Voatendry soa aman-tsara miverina any amin'ny RH koa!")
                     st.rerun()
 
+        # Affichage et sélection dans le dataframe
         event = st.dataframe(df_prod_filtered, use_container_width=True, hide_index=True, on_select="rerun", selection_mode="single-row")
         
         if event and "rows" in event.selection and event.selection["rows"]:
             idx_list = event.selection["rows"]
             if len(idx_list) > 0:
-                row_data = df_prod_filtered.iloc[idx_list]
+                row_data = df_prod_filtered.iloc[idx_list[0]]
                 row_ce = row_data['CE / Département']
                 mpiasa_nom = f"{row_data['Nom']} {row_data['Prénom']}"
                 real_idx = st.session_state.df_prod[st.session_state.df_prod['Matricule'] == str(row_data['Matricule'])].index
