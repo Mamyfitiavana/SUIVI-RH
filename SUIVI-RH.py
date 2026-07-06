@@ -18,7 +18,6 @@ kalandrie_jolay = []
 alahady_list = []
 
 for i in range(1, 32):
-    # Lojika mamoaka ny andro marina ho an'ny Jolay 2026
     date_obj = datetime(2026, 7, i)
     andro_eng = date_obj.strftime("%a")
     andro_mg = teny_malagasy[andro_eng]
@@ -78,7 +77,7 @@ if pejy_voafidy == "📊 SUIVI RH":
 
     @st.dialog("➕ Ampidiro ny Mpiasa Vaovao (RH)")
     def ampiditra_rh_form():
-        with st.form(key="form_rh_v5", clear_on_submit=True):
+        with st.form(key="form_rh_v6", clear_on_submit=True):
             mat = st.text_input("Matricule *")
             nom = st.text_input("Nom *")
             prenom = st.text_input("Prénom *")
@@ -129,7 +128,7 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
         
         @st.dialog("➕ Hampiditra Mpiasa ao amin'ny Prod")
         def ampiditra_prod_form():
-            with st.form(key="form_prod_p2_v5", clear_on_submit=True):
+            with st.form(key="form_prod_p2_v6", clear_on_submit=True):
                 mat = st.text_input("Matricule *")
                 nom = st.text_input("Nom *")
                 prenom = st.text_input("Prénom *")
@@ -205,8 +204,10 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                                     except: pass
                                     
                                 op_type = str(row['Opérations']).strip().lower()
-                                act_value = int(row['Total actes'])
                                 
+                                # FIAROVANA: Avadika ho isa madio foana na dia soratra (Texte) aza ny tao amin'ny Excel
+                                try:
+                                    act_value = int(float(str(row['Total actes']).strip()))
                                 if "saisie" in op_type:
                                     s_current = act_value
                                 else:
@@ -252,7 +253,7 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
         
         @st.dialog("📝 Fampidirana Pointage Journalier Manuelle")
         def ampiditra_pointage_popup(actual_row_idx, mpiasa_anarana):
-            with st.form(key="form_popup_p2_v5_man", clear_on_submit=True):
+            with st.form(key="form_popup_p2_v6_man", clear_on_submit=True):
                 andro_voafidy = st.selectbox("Safidio ny Andro:", kalandrie_jolay)
                 val_saisie = st.number_input("Isa Saisie:", min_value=0, value=0, step=1)
                 val_comp = st.number_input("Isa Comparaison:", min_value=0, value=0, step=1)
