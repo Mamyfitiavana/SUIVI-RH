@@ -4,10 +4,28 @@ import pandas as pd
 # 1. Fanamafisana ny Pejy Streamlit ho an'ny tabilao lehibe
 st.set_page_config(layout="wide", page_title="Suivi RH - Jolay 2026")
 
+st.markdown("""
+    <style>
+    .reportview-container { background-color: #fafafa; }
+    h1 { color: #1E3A8A; font-family: 'Segoe UI', sans-serif; font-weight: 700; }
+    </style>
+""", unsafe_allow_html=True)
+
 st.title("📊 Rafitra Fitaovana Suivi RH - Jolay 2026")
 
-# Lisitry ny Alahady amin'ny volana Jolay 2026 (05, 12, 19, 26)
-alahady_list = ["05/07", "12/07", "19/07", "26/07"]
+# Rafitra Kalandrie Jolay 2026 (Andro sy Daty mifanaraka aminy)
+# Ny 1 Jolay 2026 dia andro Alarobia (Mer)
+anaran_andro = ["Mer", "Jeu", "Ven", "Sam", "Dim", "Lun", "Mar"]
+kalandrie_jolay = []
+alahady_list = []
+
+for i in range(1, 32):
+    index_andro = (i + 1) % 7 # Kajy mamoaka ny andro marina ho an'ny Jolay 2026
+    anarana = anaran_andro[index_andro]
+    format_daty = f"{anarana} {i:02d}"
+    kalandrie_jolay.append(format_daty)
+    if anarana == "Dim":
+        alahady_list.append(format_daty)
 
 # 2. Famoronana tabilao banga ao amin'ny Session State
 if "df_rh" not in st.session_state:
@@ -16,13 +34,13 @@ if "df_rh" not in st.session_state:
         "Date d'embauche", "Type contrat", "Fin contrat", 
         "Solde congé", "NB Jour Absence"
     ]
-    # Manampy ny andro 01 hatramin'ny 31 Jolay
-    for andro in range(1, 32):
-        columns.append(f"{andro:02d}/07")
+    # Manampy ireo andro namboarina teo (Mer 01, Jeu 02...)
+    for andro in kalandrie_jolay:
+        columns.append(andro)
         
     st.session_state.df_rh = pd.DataFrame(columns=columns)
 
-# 3. PEJY KELY MISOKATRA (Modal Pop-up) REHEFA TSINDRINA ILAY BOUTON
+# 3. PEJY KELY MISOKATRA (Modal Pop-up)
 @st.dialog("➕ Ampidiro ny Mpiasa Vaovao")
 def ampiditra_mpiasa_form():
     with st.form(key="form_ajouter", clear_on_submit=True):
@@ -54,9 +72,9 @@ def ampiditra_mpiasa_form():
                 "Solde congé": solde_conge,
                 "NB Jour Absence": 0
             }
-            # ATAO VIDE TANTERAKA (fotsy) NY ANDRO REHETRA 01-31
-            for andro in range(1, 32):
-                new_worker[f"{andro:02d}/07"] = None  # None no mahatonga azy ho banga eo amin'ny tabilao
+            # Tsy asiana "Présent" intsony fa atao banga (None) mivantana mba ho fotsy madio
+            for andro in kalandrie_jolay:
+                new_worker[andro] = None  
                 
             new_df = pd.DataFrame([new_worker])
             st.session_state.df_rh = pd.concat([st.session_state.df_rh, new_df], ignore_index=True)
@@ -64,7 +82,7 @@ def ampiditra_mpiasa_form():
         else:
             st.error("Misy saha tsy maintsy fenoina (*)")
 
-# 4. FITAOVANA SIVANA SY FIKAROHANA (Ao amin'ny Sidebar)
+# 4. FITAOVANA SIVANA SY FIKAROHANA
 st.sidebar.header("🔍 Sivana sy Fikarohana")
 df = st.session_state.df_rh
 
@@ -83,14 +101,14 @@ if not df_filtered.empty:
             df_filtered["Matricule"].str.contains(fikarohana, case=False)
         ]
 
-# 5. BOUTON "AJOUTER" SY FAMPISEHOANA NY TABILAO LEHIBE
-col_btn, col_clear = st.columns([1, 4])
+# 5. BOUTON "AJOUTER" SY NY TABILAO
+col_btn, col_clear = st.columns([1, 1])
 with col_btn:
     if st.button("➕ Ajouter un employé", use_container_width=True, type="primary"):
         ampiditra_mpiasa_form()
 with col_clear:
-    # Bokotra hamafana ny fitadidiana taloha raha mbola misy "Présent" niletra teo
-    if st.button("🗑️ Fafao ny data taloha (Atao vide ny tabilao)"):
+    # Ity bokotra ity no mamafa ny fitadidiana taloha nisy "Présent" teo
+    if st.button("🗑️ Reset Tabilao (Hamafa ny 'Présent' taloha)", use_container_width=True):
         st.session_state.df_rh = pd.DataFrame(columns=st.session_state.df_rh.columns)
         st.rerun()
 
@@ -100,20 +118,19 @@ st.subheader(f"📋 Tabilao pointage mpiasa ({len(df_filtered)} tafiditra)")
 if df_filtered.empty:
     st.info("Mbola tsy misy mpiasa ny tabilao. Kitiho ilay bokotra 'Ajouter un employé' eo ambony io mba hampidirana ny voalohany.")
 else:
-    # 6. HEADERS CONFIGURATION: Mandamina ny safidy sy ny loko ho an'ny Alahady
-    andro_columns = [f"{andro:02d}/07" for andro in range(1, 32)]
+    # 6. CONFIGURATION NY LOKO HO AN'NY ALAHADY
     config_colona = {}
     
-    for col in andro_columns:
+    for col in kalandrie_jolay:
         if col in alahady_list:
-            # Raha Alahady dia asiana famantarana 🔴 sady asiana soratra hoe (Dimanche)
+            # Raha Alahady dia asiana famantarana 🔴 mena eo amin'ny lohateny
             config_colona[col] = st.column_config.SelectboxColumn(
-                label=f"🔴 {col} (Dim)",
-                options=["Présent", "Absent", "Repos", "Congé"],
-                help="Andro Alahady"
+                label=f"🔴 {col}",
+                options=["Présent", "Absent", "Repos", "Congé"]
             )
         else:
             config_colona[col] = st.column_config.SelectboxColumn(
+                label=col,
                 options=["Présent", "Absent", "Repos", "Congé"]
             )
             
@@ -129,6 +146,6 @@ else:
     )
 
     # Bokotra hitahirizana ny fanovana
-    if st.button("💾 Tehirizo ny pointage / fanovana"):
+    if st.button("💾 Tehirizo ny pointage / fanovana", type="secondary"):
         st.session_state.df_rh.update(edited_df)
         st.success("Tafatahiry soa aman-tsara ny pointage vaovao!")
