@@ -11,12 +11,25 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 2. MENU PROFESSIONAL EO AMIN'NY SIDEBAR (Safidy Pejy)
+# 2. MENU PRINCIPAL EO AMIN'NY SIDEBAR (Safidy Pejy)
 st.sidebar.title("🎮 Menu lehibe")
 pejy_voafidy = st.sidebar.radio(
     "Safidio ny asa tiana hatao:",
     ["📊 SUIVI RH", "⚙️ SUIVI PROD"]
 )
+
+# Kalandrie Jolay 2026
+anaran_andro = ["Mer", "Jeu", "Ven", "Sam", "Dim", "Lun", "Mar"]
+kalandrie_jolay = []
+alahady_list = []
+
+for i in range(1, 32):
+    index_andro = (i + 1) % 7
+    anarana = anaran_andro[index_andro]
+    format_daty = f"{anarana} {i:02d}"
+    kalandrie_jolay.append(format_daty)
+    if anarana == "Dim":
+        alahady_list.append(format_daty)
 
 # ------------------------------------------------------------------
 # PEJY 1 : SUIVI RH
@@ -24,20 +37,7 @@ pejy_voafidy = st.sidebar.radio(
 if pejy_voafidy == "📊 SUIVI RH":
     st.title("📊 Rafitra Fitaovana Suivi RH - Jolay 2026")
 
-    # Kalandrie Jolay 2026
-    anaran_andro = ["Mer", "Jeu", "Ven", "Sam", "Dim", "Lun", "Mar"]
-    kalandrie_jolay = []
-    alahady_list = []
-
-    for i in range(1, 32):
-        index_andro = (i + 1) % 7
-        anarana = anaran_andro[index_andro]
-        format_daty = f"{anarana} {i:02d}"
-        kalandrie_jolay.append(format_daty)
-        if anarana == "Dim":
-            alahady_list.append(format_daty)
-
-    # Famoronana tabilao banga ho an'ny RH ao amin'ny Session State
+    # Famoronana tabilao misy mpiasa ohatra iray (Exemple) ao amin'ny Session State
     if "df_rh" not in st.session_state:
         columns = [
             "Matricule", "Nom", "Prénom", "CE / Département", 
@@ -46,7 +46,23 @@ if pejy_voafidy == "📊 SUIVI RH":
         ]
         for andro in kalandrie_jolay:
             columns.append(andro)
-        st.session_state.df_rh = pd.DataFrame(columns=columns)
+            
+        # Mamorona mpiasa ohatra iray (Exemple 1) izay fotsy/vide ny tabilao pointage-ny
+        mpiasa_ohatra = {
+            "Matricule": "MAT-0001",
+            "Nom": "RAKOTO",
+            "Prénom": "Jean",
+            "CE / Département": "CE 1",
+            "Date d'embauche": "2026-01-01",
+            "Type contrat": "CDI",
+            "Fin contrat": "-",
+            "Solde congé": 30,
+            "NB Jour Absence": 0
+        }
+        for andro in kalandrie_jolay:
+            mpiasa_ohatra[andro] = None # Atao banga par défaut
+            
+        st.session_state.df_rh = pd.DataFrame([mpiasa_ohatra], columns=columns)
 
     # Pop-up hampidirana mpiasa vaovao
     @st.dialog("➕ Ampidiro ny Mpiasa Vaovao")
@@ -89,7 +105,7 @@ if pejy_voafidy == "📊 SUIVI RH":
             else:
                 st.error("Misy saha tsy maintsy fenoina (*)")
 
-    # Fitaovana sivana
+    # Fitaovana sivana ao amin'ny Sidebar
     st.sidebar.markdown("---")
     st.sidebar.subheader("🔍 Sivana RH")
     df = st.session_state.df_rh
@@ -108,21 +124,21 @@ if pejy_voafidy == "📊 SUIVI RH":
                 df_filtered["Matricule"].str.contains(fikarohana, case=False)
             ]
 
-    # Bokotra Ajouter sy Reset
-    col_btn, col_clear = st.columns()
+    # Bokotra Ajouter sy Reset (Namboarina ho st.columns(2) mba tsy hisy erreur intsony)
+    col_btn, col_clear = st.columns(2)
     with col_btn:
         if st.button("➕ Ajouter un employé", use_container_width=True, type="primary"):
             ampiditra_mpiasa_form()
     with col_clear:
-        if st.button("🗑️ Reset Tabilao RH", use_container_width=True):
+        if st.button("🗑️ Reset Tabilao (Hamafa ny mpiasa rehetra)", use_container_width=True):
             st.session_state.df_rh = pd.DataFrame(columns=st.session_state.df_rh.columns)
             st.rerun()
 
     st.markdown("---")
-    st.subheader(f"📋 Tabilao pointage mpiasa ({len(df_filtered)} tafiditra)")
+    st.subheader(f"📋 Tabilao pointage mpiasa ({len(df_filtered)} hita)")
 
     if df_filtered.empty:
-        st.info("Mbola tsy misy mpiasa ny tabilao. Kitiho ilay bokotra 'Ajouter un employé' eo ambony io mba hampidirana ny voalohany.")
+        st.info("Mbola tsy misy mpiasa ny tabilao. Kitiho ilay bokotra 'Ajouter un employé' eo ambony io mba hampidirana mpiasa vaovao.")
     else:
         config_colona = {}
         for col in kalandrie_jolay:
@@ -136,7 +152,7 @@ if pejy_voafidy == "📊 SUIVI RH":
 
         edited_df = st.data_editor(df_filtered, column_config=config_colona, use_container_width=True, hide_index=True)
 
-        if st.button("💾 Tehirizo ny pointage / fanovana"):
+        if st.button("💾 Tehirizo ny pointage / fanovana", use_container_width=True):
             st.session_state.df_rh.update(edited_df)
             st.success("Tafatahiry soa aman-tsara ny pointage vaovao!")
 
@@ -146,5 +162,4 @@ if pejy_voafidy == "📊 SUIVI RH":
 elif pejy_voafidy == "⚙️ SUIVI PROD":
     st.title("⚙️ Rafitra Fitaovana Suivi Production")
     st.write("Eto no hiseho ny tabilao sy ny mombamomba ny famokarana (Production).")
-    
-    st.info("💡 Vonona handray ny torimarika avy aminao aho izao. Soraty eto ny tsipiriany rehetra tianao hatao ato (Ohatra: inona ny tsanganana/colonnes ilaina, inona ny bokotra hisy, sns.) mba hamoronantsika azy miaraka!")
+    st.info("💡 Vonona handray ny torimarika momba ny Suivi Prod aho izao. Soraty eto ny tsipiriany rehetra tianao hatao ato!")
