@@ -67,7 +67,7 @@ def convert_df_to_excel(df):
     return output.getvalue()
 
 # ==================================================================
-# PEJY 1 : SUIVI RH (MISY GESTION COCHAGE PAR LIGNE VAOVAO)
+# PEJY 1 : SUIVI RH (MISY COCHAGE SY SYNC AUTOMATIQUE PROD VAOVAO)
 # ==================================================================
 if pejy_voafidy == "📊 SUIVI RH":
     st.title("📊 Rafitra Fitaovana Suivi RH - Jolay 2026")
@@ -87,23 +87,47 @@ if pejy_voafidy == "📊 SUIVI RH":
                 vaovao = {"Matricule": mat, "Nom": nom, "Prénom": prenom, "CE / Département": ce, "Date d'embauche": "2026-07-01", "Type contrat": "CDI", "Fin contrat": "-", "Solde congé": 0, "NB Jour Absence": 0}
                 for col in kalandrie_jolay: vaovao[col] = None
                 st.session_state.df_rh = pd.concat([st.session_state.df_rh, pd.DataFrame([vaovao])], ignore_index=True)
+                
+                # REHEFA MANAMPI AO AMIN'NY RH DIA MIFORONA HO AZY AO AMIN'NY PROD KOA ILAY MPIASA
+                if not st.session_state.df_prod[st.session_state.df_prod['Matricule'] == mat].empty:
+                    pass
+                else:
+                    vaovao_prod = {"Matricule": mat, "Nom": nom, "Prénom": prenom, "CE / Département": ce, "Total Mensuel (Saisie)": 0, "Total Mensuel (Comp)": 0, "Total Hebdo (Saisie)": 0, "Total Hebdo (Comp)": 0, "Quota Obligatoire": 1000, "Status Prime": "❌ NOK"}
+                    for col in kalandrie_jolay: vaovao_prod[col] = ""
+                    st.session_state.df_prod = pd.concat([st.session_state.df_prod, pd.DataFrame([vaovao_prod])], ignore_index=True)
+                
                 st.rerun()
 
-    @st.dialog("✏️ Modifier les informations (RH)")
+    @st.dialog("✏️ Modifier les informations (RH & Sync Prod)")
     def modifier_rh_popup(row_idx):
-        with st.form(key="form_edit_rh"):
+        # Alaina ny Matricule taloha mialohan'ny hanovana azy
+        old_mat = str(st.session_state.df_rh.at[row_idx, "Matricule"]).strip()
+        
+        with st.form(key="form_edit_rh_sync"):
             m_nom = st.text_input("Nom:", value=str(st.session_state.df_rh.at[row_idx, "Nom"]))
             m_pre = st.text_input("Prénom:", value=str(st.session_state.df_rh.at[row_idx, "Prénom"]))
             m_mat = st.text_input("Matricule:", value=str(st.session_state.df_rh.at[row_idx, "Matricule"]))
             m_ce = st.selectbox("CE / Département:", ["CE 1", "CE 2", "CE 3", "CE 4"], index=["CE 1", "CE 2", "CE 3", "CE 4"].index(st.session_state.df_rh.at[row_idx, "CE / Département"]) if st.session_state.df_rh.at[row_idx, "CE / Département"] in ["CE 1", "CE 2", "CE 3", "CE 4"] else 0, disabled=(ce_mpampiasa != "ADMIN"))
             st.markdown("---")
-            submit_mod = st.form_submit_button("💾 Sauvegarder les modifications", use_container_width=True)
+            submit_mod = st.form_submit_button("💾 Sauvegarder (RH sy ny PROD miaraka)", use_container_width=True)
+            
             if submit_mod:
+                # 1. Manova ny ao amin'ny tabilao RH
                 st.session_state.df_rh.at[row_idx, "Nom"] = m_nom
                 st.session_state.df_rh.at[row_idx, "Prénom"] = m_pre
                 st.session_state.df_rh.at[row_idx, "Matricule"] = m_mat
                 st.session_state.df_rh.at[row_idx, "CE / Département"] = m_ce
-                st.success("Modifications enregistrées!")
+                
+                # 2. LOJIKA SYNC AUTOMATIQUE HO AN'NY TABILAO PROD
+                # Karohina any amin'ny Prod ilay mpiasa manana an'ilay Matricule taloha
+                prod_indices = st.session_state.df_prod[st.session_state.df_prod['Matricule'] == old_mat].index
+                for p_idx in prod_indices:
+                    st.session_state.df_prod.at[p_idx, "Nom"] = m_nom
+                    st.session_state.df_prod.at[p_idx, "Prénom"] = m_pre
+                    st.session_state.df_prod.at[p_idx, "Matricule"] = m_mat
+                    st.session_state.df_prod.at[p_idx, "CE / Département"] = m_ce
+                
+                st.success("Modifications appliquées et synchronisées avec le Suivi Prod!")
                 st.rerun()
 
     col1, col2 = st.columns(2)
@@ -115,26 +139,23 @@ if pejy_voafidy == "📊 SUIVI RH":
             
     st.markdown("---")
     st.subheader(f"📋 Tabilao Fitantanan-draharaha RH Global ({len(df_rh_all)} mpiasa rehetra)")
-    st.caption("💡 Kitiho ny boribory kely eo ankavian'ny andalana iray raha hanova Nom na Prénom.")
+    st.caption("💡 Kitiho ny boribory kely eo ankavian'ny andalana iray raha hanova ny mombamomba azy (Mivadika ho azy any amin'ny Prod koa).")
     
-    # Tabilao mampiasa select mode par ligne ho an'ny RH
     event_rh = st.dataframe(df_rh_all, use_container_width=True, hide_index=True, on_select="rerun", selection_mode="single-row")
     
     if event_rh and "rows" in event_rh.selection and event_rh.selection["rows"]:
-        idx_rh = event_rh.selection["rows"]
-        if len(idx_rh) > 0:
-            real_idx_rh = idx_rh[0]
-            row_rh_data = df_rh_all.iloc[real_idx_rh]
-            row_rh_ce = row_rh_data['CE / Département']
-            
-            st.markdown("---")
-            if ce_mpampiasa != "ADMIN" and row_rh_ce != ce_mpampiasa:
-                st.error(f"❌ Voarara ny fanovana: Mpiasa ao amin'ny **{row_rh_ce}** ity. Ny mpiasa ao amin'ny **{ce_mpampiasa}** ihany no azonao ovaina.")
-            else:
-                if st.button(f"✏️ Modifier les informations ho an'i {row_rh_data['Nom']}", type="secondary", use_container_width=True):
-                    modifier_rh_popup(real_idx_rh)
+        idx_rh = event_rh.selection["rows"][0] if isinstance(event_rh.selection["rows"], list) else event_rh.selection["rows"]
+        row_rh_data = df_rh_all.iloc[idx_rh]
+        row_rh_ce = row_rh_data['CE / Département']
+        
+        st.markdown("---")
+        if ce_mpampiasa != "ADMIN" and row_rh_ce != ce_mpampiasa:
+            st.error(f"❌ Voarara ny fanovana: Mpiasa ao amin'ny **{row_rh_ce}** ity. Ny mpiasa ao amin'ny **{ce_mpampiasa}** ihany no azonao ovaina.")
+        else:
+            if st.button(f"✏️ Modifier les informations ho an'i {row_rh_data['Nom']}", type="secondary", use_container_width=True):
+                modifier_rh_popup(idx_rh)
 # ==================================================================
-# PEJY 2 : SUIVI PROD (TAPANY FAHAROA)
+# PEJY 2 : SUIVI PROD (TAPANY FAHAROA - ENREGISTREMENT)
 # ==================================================================
 elif pejy_voafidy == "⚙️ SUIVI PROD":
     st.title("⚙️ Rafitra Fitaovana Suivi Production - Jolay 2026")
@@ -152,7 +173,7 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
         
         @st.dialog("➕ Hampiditra Mpiasa ao amin'ny Prod")
         def ampiditra_prod_form():
-            with st.form(key="form_prod_p2_v8_final", clear_on_submit=True):
+            with st.form(key="form_prod_p2_v8_final_sync", clear_on_submit=True):
                 mat = st.text_input("Matricule *")
                 nom = st.text_input("Nom *")
                 prenom = st.text_input("Prénom *")
@@ -280,7 +301,7 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
         
         @st.dialog("📝 Fampidirana Pointage Journalier Manuelle")
         def ampiditra_pointage_popup(actual_row_idx, mpiasa_anarana):
-            with st.form(key="form_popup_p2_v8_man_fixed", clear_on_submit=True):
+            with st.form(key="form_popup_p2_v8_man_fixed_sync", clear_on_submit=True):
                 andro_voafidy = st.selectbox("Safidio ny Andro:", kalandrie_jolay)
                 val_saisie = st.number_input("Isa Saisie:", min_value=0, value=0, step=1)
                 val_comp = st.number_input("Isa Comparaison:", min_value=0, value=0, step=1)
@@ -295,7 +316,7 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
 
         @st.dialog("✏️ Hanova ny mombamomba ny mpiasa (Prod)")
         def hanova_mpiasa_popup(actual_row_idx):
-            with st.form(key="form_modifier_worker_prod"):
+            with st.form(key="form_modifier_worker_prod_sync"):
                 new_mat = st.text_input("Matricule:", value=str(st.session_state.df_prod.at[actual_row_idx, "Matricule"]))
                 new_nom = st.text_input("Nom:", value=str(st.session_state.df_prod.at[actual_row_idx, "Nom"]))
                 new_prenom = st.text_input("Prénom:", value=str(st.session_state.df_prod.at[actual_row_idx, "Prénom"]))
@@ -307,13 +328,12 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                     st.success("Voatendry soa aman-tsara!")
                     st.rerun()
 
-        # Fampisehoana ny tabilao feno
         event = st.dataframe(df_prod_filtered, use_container_width=True, hide_index=True, on_select="rerun", selection_mode="single-row")
         
         if event and "rows" in event.selection and event.selection["rows"]:
             idx = event.selection["rows"]
             if len(idx) > 0:
-                row_data = df_prod_filtered.iloc[idx[0]]
+                row_data = df_prod_filtered.iloc[idx]
                 row_ce = row_data['CE / Département']
                 mpiasa_nom = f"{row_data['Nom']} {row_data['Prénom']}"
                 real_idx = st.session_state.df_prod[st.session_state.df_prod['Matricule'] == row_data['Matricule']].index[0]
@@ -333,4 +353,4 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                         if st.button("🗑️ Hamafa ity mpiasa ity (Supprimer)", use_container_width=True):
                             st.session_state.df_prod = st.session_state.df_prod.drop(real_idx).reset_index(drop=True)
                             st.success("Voafafa soa aman-tsara ilay andalana!")
-                       
+                            st.rerun()
