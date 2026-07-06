@@ -1,19 +1,14 @@
 import streamlit as st
 import pandas as pd
 
-# 1. Configuration ny Pejy Streamlit (Atao mifanaraka amin'ny Ecran lehibe)
+# 1. Configuration ny Pejy Streamlit
 st.set_page_config(layout="wide", page_title="Rafitra Fitantanana - 2026")
 
-# Style CSS mba hahatonga ny lohateny sy ny pejy ho tsara tarehy sy Pro
-st.markdown("""
-    <style>
-    .reportview-container { background-color: #fafafa; }
-    h1 { color: #1E3A8A; font-family: 'Segoe UI', sans-serif; font-weight: 700; }
-    div[data-testid="stNotification"] { border-radius: 8px; }
-    </style>
-""", unsafe_allow_html=True)
+# Kisary famantarana ny asa tsirairay ao amin'ny tabilao
+TAG_SAISIE = "✍️"  # Kisary ho an'ny Saisie
+TAG_COMP = "🔍"    # Kisary ho an'ny Comparaison
 
-# Kalandrie Jolay 2026 (Ny 1 Jolay 2026 dia andro Alarobia = Mer)
+# Kalandrie Jolay 2026 (Alarobia ny 1 Jolay 2026)
 anaran_andro = ["Mer", "Jeu", "Ven", "Sam", "Dim", "Lun", "Mar"]
 kalandrie_jolay = []
 alahady_list = []
@@ -41,26 +36,27 @@ if pejy_voafidy == "📊 SUIVI RH":
     st.info("Kitiho ny 'SUIVI PROD' eo amin'ny sidebar raha hijery ny tabilao vaovao.")
 
 # ==================================================================
-# PEJY 2 : SUIVI PROD (VERSION PROFESSIONNELLE & SECURISEE)
+# PEJY 2 : SUIVI PROD (VERSION ULTRA-PROFESSIONNELLE)
 # ==================================================================
 elif pejy_voafidy == "⚙️ SUIVI PROD":
     st.title("⚙️ Rafitra Fitaovana Suivi Production - Jolay 2026")
     
-    # Famoronana tabilao ho an'ny Prod ao amin'ny Session State raha mbola tsy misy
+    # Famoronana tabilao ho an'ny Prod ao amin'ny Session State
     if "df_prod" not in st.session_state:
         base_columns = ["Matricule", "Nom", "Prénom", "Total Mensuel (Saisie)", "Total Mensuel (Comp)", "Total Hebdo (Saisie)", "Total Hebdo (Comp)"]
         all_columns_prod = base_columns + kalandrie_jolay
         
-        # Mpiasa ohatra iray avy amin'ny sarinao Excel (MATRICULE 627)
+        # Mpiasa ohatra iray avy amin'ny sarinao Excel (Misy endrika Pro vaovao)
         mpiasa_prod_ohatra = {
             "Matricule": "627", "Nom": "fanoemzantsoa", "Prénom": "mamy fitiavana",
             "Total Mensuel (Saisie)": 200, "Total Mensuel (Comp)": 210,
             "Total Hebdo (Saisie)": 200, "Total Hebdo (Comp)": 210
         }
         for col in kalandrie_jolay:
-            mpiasa_prod_ohatra[col] = "" # Atomboka banga fotsy tsara
+            mpiasa_prod_ohatra[col] = "" # Atomboka banga
             
-        mpiasa_prod_ohatra["Mer 01"] = "200 / 210" # Ohatra voalohany avy amin'ny sarinao
+        # Format vaovao: asiana marika mazava tsara ny Saisie sy Comp
+        mpiasa_prod_ohatra["Mer 01"] = f"{TAG_SAISIE}200  |  {TAG_COMP}210"
         st.session_state.df_prod = pd.DataFrame([mpiasa_prod_ohatra], columns=all_columns_prod)
 
     df_prod = st.session_state.df_prod
@@ -68,7 +64,7 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
     # POP-UP 1: HAMPIDIRANA MPIASA PROD VAOVAO
     @st.dialog("➕ Hampiditra Mpiasa ao amin'ny Prod")
     def ampiditra_prod_form():
-        with st.form(key="form_prod_new", clear_on_submit=True):
+        with st.form(key="form_prod_new_pro", clear_on_submit=True):
             mat = st.text_input("Matricule *")
             nom = st.text_input("Nom *")
             prenom = st.text_input("Prénom *")
@@ -83,22 +79,25 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                 st.session_state.df_prod = pd.concat([st.session_state.df_prod, pd.DataFrame([vaovao])], ignore_index=True)
                 st.rerun()
 
-    # POP-UP 2: FORMULAIRE POP-UP (NOMBOARINA NY FIFANTANANA SY KAJY)
+    # POP-UP 2: FORMULAIRE POP-UP POP-UP (MAMPIASA FORMAT PRO MISY LABELS)
     @st.dialog("📝 Ampidiro ny Pointage Journalier")
     def ampiditra_pointage_popup(row_idx, mpiasa_anarana):
         st.write(f"Mpiasa hovaina: **{mpiasa_anarana}**")
-        with st.form(key="form_pointage_day_pro", clear_on_submit=True):
+        with st.form(key="form_pointage_day_ultra", clear_on_submit=True):
             andro_voafidy = st.selectbox("Safidio ny Andro:", kalandrie_jolay)
-            val_saisie = st.number_input("Isa Saisie:", min_value=0, value=0)
-            val_comp = st.number_input("Isa Comparaison:", min_value=0, value=0)
+            
+            # Nasiana dikan-teny sy lohateny mazava tsara
+            val_saisie = st.number_input(f"{TAG_SAISIE} Isa avy amin'ny SAISIE (Saves):", min_value=0, value=0, step=1)
+            val_comp = st.number_input(f"{TAG_COMP} Isa avy amin'ny COMPARAISON:", min_value=0, value=0, step=1)
+            
             st.markdown("---")
-            submit_pointage = st.form_submit_button("💾 Tehirizo ity pointage ity", use_container_width=True)
+            submit_pointage = st.form_submit_button("💾 Tehirizo ato amin'ny tabilao", use_container_width=True)
             
             if submit_pointage:
-                # 1. Manoratra mivantana ny pointage vaovao amin'ilay andalana sy daty voafidy
-                st.session_state.df_prod.at[row_idx, andro_voafidy] = f"{val_saisie} / {val_comp}"
+                # Tehirizina amin'ny endrika Pro mampiasa famantarana mazava tsara
+                st.session_state.df_prod.at[row_idx, andro_voafidy] = f"{TAG_SAISIE}{val_saisie}  |  {TAG_COMP}{val_comp}"
                 
-                # 2. FIKAJIANA NY TOTAL REHETRA (MENSUIEL SY HEBDO) MIARAKA
+                # FIKAJIANA NY TOTAL AUTOMATIQUE REHEFA AVY EO
                 total_saisie_mensuel = 0
                 total_comp_mensuel = 0
                 total_saisie_hebdo = 0
@@ -106,32 +105,34 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                 
                 for c in kalandrie_jolay:
                     cell_value = st.session_state.df_prod.at[row_idx, c]
-                    if cell_value and "/" in str(cell_value):
-                        parts = str(cell_value).split("/")
+                    if cell_value and "|" in str(cell_value):
                         try:
-                            s_val = int(parts[0].strip())
-                            c_val = int(parts[1].strip())
+                            # Tetezina sy saritahana mampiasa ilay marika "|"
+                            parts = str(cell_value).split("|")
                             
-                            # Ampidirina amin'ny Mensuel ny andro rehetra misy data
+                            # Fafana ny kisary ✍️ sy 🔍 mba hahazoana ny isa fotsiny
+                            s_val = int(parts[0].replace(TAG_SAISIE, "").strip())
+                            c_val = int(parts[1].replace(TAG_COMP, "").strip())
+                            
+                            # Fanampiana amin'ny Mensuel
                             total_saisie_mensuel += s_val
                             total_comp_mensuel += c_val
                             
-                            # Kajy Hebdo: Raisina ho herinandro voalohany ny andro 01 hatramin'ny 07 Jolay
-                            # Alaina amin'ny alalan'ny tarehimarika ao anatin'ny lohateny (c)
+                            # Fanampiana amin'ny Hebdo (Andro 01 hatramin'ny 07 Jolay)
                             laharan_andro = int(''.join(filter(str.isdigit, c)))
                             if laharan_andro <= 7:
                                 total_saisie_hebdo += s_val
                                 total_comp_hebdo += c_val
                         except:
-                            pass # Tsy raharahina raha misy diso endrika
+                            pass
                 
-                # Fanavaozana ireo tsanganana Total rehetra ao amin'ny fitahirizana
+                # Fanavaozana ny tabilao lehibe
                 st.session_state.df_prod.at[row_idx, "Total Mensuel (Saisie)"] = total_saisie_mensuel
                 st.session_state.df_prod.at[row_idx, "Total Mensuel (Comp)"] = total_comp_mensuel
                 st.session_state.df_prod.at[row_idx, "Total Hebdo (Saisie)"] = total_saisie_hebdo
                 st.session_state.df_prod.at[row_idx, "Total Hebdo (Comp)"] = total_comp_hebdo
                 
-                st.success("Tafakajy sy voatahiry soa aman-tsara ny pointage vaovao!")
+                st.success("Tafakajy sy voatahiry soa aman-tsara!")
                 st.rerun()
 
     # 3. BOKOTRA SY FITANTANANA
@@ -146,9 +147,12 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
 
     st.markdown("---")
     st.subheader("📋 Tabilao fampidirana sy fikajiana Production")
-    st.caption("💡 Toromarika: Kitiho ny boribory kely eo ankavian'ny andalana misy mpiasa iray mba hisafidianana azy, avy eo kitiho ilay bokotra handefasana pointage.")
+    
+    # Hevitra fanazavana ny kisary eo ambonin'ny tabilao mba ho fantatry ny mpampiasa
+    st.markdown(f"**Toro-marika momba ny tabilao:** &nbsp;&nbsp;&nbsp;&nbsp; {TAG_SAISIE} = **Saisie** &nbsp;&nbsp;|&nbsp;&nbsp; {TAG_COMP} = **Comparaison**")
+    st.caption("💡 Kitiho ny boribory kely eo ankavian'ny andalana misy mpiasa iray mba hampidirana ny pointage-ny.")
 
-    # Fampisehoana ny tabilao mampiasa st.dataframe (Selection mode Pro)
+    # Fampisehoana ny tabilao lehibe
     event = st.dataframe(
         df_prod,
         use_container_width=True,
@@ -157,15 +161,11 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
         selection_mode="single-row"
     )
 
-    # 4. REHEFA MISY ANDALANA VOAFIDY (SELECTION ROW ACCURATE)
+    # 4. REHEFA MISY ANDALANA VOAFIDY
     if event and "rows" in event.selection and event.selection["rows"]:
-        # Alaina ny laharan'ilay andalana amin'ny endrika isa tsotra (integer)
-        selected_row_idx = event.selection["rows"][0]
-        
-        # Alaina ny anaran'ilay mpiasa voafidy mivantana avy amin'ilay index azo antoka
+        selected_row_idx = event.selection["rows"]
         mpiasa_nom = f"{df_prod.at[selected_row_idx, 'Nom']} {df_prod.at[selected_row_idx, 'Prénom']}"
         
         st.markdown("---")
-        # Mipoitra ity bokotra lehibe ity rehefa nifidy andalana ianao
         if st.button(f"📝 Ampiditra Pointage ho an'i {mpiasa_nom}", type="secondary", use_container_width=True):
             ampiditra_pointage_popup(selected_row_idx, mpiasa_nom)
