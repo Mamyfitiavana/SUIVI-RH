@@ -6,6 +6,9 @@ st.set_page_config(layout="wide", page_title="Suivi RH - Jolay 2026")
 
 st.title("📊 Rafitra Fitaovana Suivi RH - Jolay 2026")
 
+# Lisitry ny Alahady amin'ny volana Jolay 2026 (05, 12, 19, 26)
+alahady_list = ["05/07", "12/07", "19/07", "26/07"]
+
 # 2. Famoronana tabilao banga ao amin'ny Session State
 if "df_rh" not in st.session_state:
     columns = [
@@ -40,7 +43,6 @@ def ampiditra_mpiasa_form():
 
     if submit_button:
         if matricule and nom and prenom:
-            # Manomana ny angon-drakitra
             new_worker = {
                 "Matricule": matricule,
                 "Nom": nom,
@@ -52,13 +54,13 @@ def ampiditra_mpiasa_form():
                 "Solde congé": solde_conge,
                 "NB Jour Absence": 0
             }
-            # Atao banga (vide / fotsy) ny kalandrie rehetra
+            # ATAO VIDE TANTERAKA (fotsy) NY ANDRO REHETRA 01-31
             for andro in range(1, 32):
-                new_worker[f"{andro:02d}/07"] = "" # Fotsy tsy misy na inona na inona
+                new_worker[f"{andro:02d}/07"] = None  # None no mahatonga azy ho banga eo amin'ny tabilao
                 
             new_df = pd.DataFrame([new_worker])
             st.session_state.df_rh = pd.concat([st.session_state.df_rh, new_df], ignore_index=True)
-            st.rerun() # Mamelona ny pejy mba haseho avy hatrany ilay mpiasa vaovao
+            st.rerun()
         else:
             st.error("Misy saha tsy maintsy fenoina (*)")
 
@@ -82,11 +84,15 @@ if not df_filtered.empty:
         ]
 
 # 5. BOUTON "AJOUTER" SY FAMPISEHOANA NY TABILAO LEHIBE
-col_btn, _ = st.columns([2, 8])
+col_btn, col_clear = st.columns([1, 4])
 with col_btn:
-    # Ity ny bouton mampiditra ilay pejy kely
     if st.button("➕ Ajouter un employé", use_container_width=True, type="primary"):
         ampiditra_mpiasa_form()
+with col_clear:
+    # Bokotra hamafana ny fitadidiana taloha raha mbola misy "Présent" niletra teo
+    if st.button("🗑️ Fafao ny data taloha (Atao vide ny tabilao)"):
+        st.session_state.df_rh = pd.DataFrame(columns=st.session_state.df_rh.columns)
+        st.rerun()
 
 st.markdown("---")
 st.subheader(f"📋 Tabilao pointage mpiasa ({len(df_filtered)} tafiditra)")
@@ -94,12 +100,23 @@ st.subheader(f"📋 Tabilao pointage mpiasa ({len(df_filtered)} tafiditra)")
 if df_filtered.empty:
     st.info("Mbola tsy misy mpiasa ny tabilao. Kitiho ilay bokotra 'Ajouter un employé' eo ambony io mba hampidirana ny voalohany.")
 else:
-    # Safidy azo fidinana amin'ny kalandrie (Tsy misy "None" intsony fa lasa toerana banga "")
+    # 6. HEADERS CONFIGURATION: Mandamina ny safidy sy ny loko ho an'ny Alahady
     andro_columns = [f"{andro:02d}/07" for andro in range(1, 32)]
-    config_colona = {
-        col: st.column_config.SelectboxColumn(options=["", "Présent", "Absent", "Repos", "Congé"])
-        for col in andro_columns
-    }
+    config_colona = {}
+    
+    for col in andro_columns:
+        if col in alahady_list:
+            # Raha Alahady dia asiana famantarana 🔴 sady asiana soratra hoe (Dimanche)
+            config_colona[col] = st.column_config.SelectboxColumn(
+                label=f"🔴 {col} (Dim)",
+                options=["Présent", "Absent", "Repos", "Congé"],
+                help="Andro Alahady"
+            )
+        else:
+            config_colona[col] = st.column_config.SelectboxColumn(
+                options=["Présent", "Absent", "Repos", "Congé"]
+            )
+            
     config_colona["Type contrat"] = st.column_config.SelectboxColumn(options=["CDI", "CDD", "Essai", "Stage"])
     config_colona["CE / Département"] = st.column_config.SelectboxColumn(options=["CE 1", "CE 2", "CE 3", "CE 4"])
 
