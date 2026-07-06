@@ -57,7 +57,6 @@ if "df_prod" not in st.session_state:
     mpiasa_p1["Ven 01"] = f"{TAG_SAISIE}20  |  {TAG_COMP}30"
     st.session_state.df_prod = pd.DataFrame([mpiasa_p1, mpiasa_p2], columns=all_columns_prod)
 
-# Fitaovana mpanova data ho Excel
 def convert_df_to_excel(df):
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -75,7 +74,7 @@ if pejy_voafidy == "📊 SUIVI RH":
 
     @st.dialog("➕ Ampidiro ny Mpiasa Vaovao (RH)")
     def ampiditra_rh_form():
-        with st.form(key="form_rh_complete_v2", clear_on_submit=True):
+        with st.form(key="form_rh_v3", clear_on_submit=True):
             mat = st.text_input("Matricule *")
             nom = st.text_input("Nom *")
             prenom = st.text_input("Prénom *")
@@ -105,10 +104,10 @@ if pejy_voafidy == "📊 SUIVI RH":
             row_ce = df_rh_all.at[idx, "CE / Département"]
             if ce_mpampiasa == "ADMIN" or row_ce == ce_mpampiasa:
                 st.session_state.df_rh.iloc[idx] = edited_rh.iloc[idx]
-        st.success("Tafatahiry soa aman-tsara ny fanovana RH nekena!")
+        st.success("Tafatahiry soa aman-tsara ny fanovana!")
         st.rerun()
 # ==================================================================
-# PEJY 2 : SUIVI PROD (VERSION ULTRA-COMPLETE MODIFIER/SUPPRIMER)
+# PEJY 2 : SUIVI PROD (TABILAO FENO KALANDRIE EO AMIN'NY TABS ROA)
 # ==================================================================
 elif pejy_voafidy == "⚙️ SUIVI PROD":
     st.title("⚙️ Rafitra Fitaovana Suivi Production - Jolay 2026")
@@ -118,14 +117,14 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
 
     tab1, tab2 = st.tabs(["📋 TABILAO GLOBAL (Mijery ny Rehetra)", "📝 INTEGRATION POINTAGE & GESTION"])
 
-    # --- TAB 1 : TABILAO GLOBAL ---
+    # --- TAB 1 : TABILAO GLOBAL (REHETRA SY NY KALANDRIE) ---
     with tab1:
         st.subheader("📋 Tabilao pointage Production Global (Ny mpiasa rehetra)")
         st.markdown(f"**Toro-marika:** &nbsp;&nbsp;&nbsp;&nbsp; {TAG_SAISIE} = **Saisie** &nbsp;&nbsp;|&nbsp;&nbsp; {TAG_COMP} = **Comparaison**")
         
         @st.dialog("➕ Hampiditra Mpiasa ao amin'ny Prod")
         def ampiditra_prod_form():
-            with st.form(key="form_prod_complete_final_p2_v2", clear_on_submit=True):
+            with st.form(key="form_prod_p2_v3", clear_on_submit=True):
                 mat = st.text_input("Matricule *")
                 nom = st.text_input("Nom *")
                 prenom = st.text_input("Prénom *")
@@ -148,15 +147,15 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
         st.markdown("---")
         st.dataframe(df_prod_all, use_container_width=True, hide_index=True)
 
-    # --- TAB 2 : GESTION PAR LIGNE (POINTAGE / MODIFIER / SUPPRIMER) ---
+    # --- TAB 2 : GESTION SY POINTAGE (MISY KALANDRIE FENO) ---
     with tab2:
-        st.subheader("📝 Fitantanana sy Fampidirana Pointage isan-andalana")
-        st.write("💡 Kitiho ny boribory kely eo ankavian'ny andalana misy mpiasa iray mba hitantanana ny mombamomba azy.")
+        st.subheader("📝 Fitantanana sy Fampidirana Pointage")
+        st.markdown(f"**Toro-marika:** &nbsp;&nbsp;&nbsp;&nbsp; {TAG_SAISIE} = **Saisie** &nbsp;&nbsp;|&nbsp;&nbsp; {TAG_COMP} = **Comparaison**")
+        st.write("💡 Kitiho ny boribory kely eo ankavian'ny andalana misy mpiasa iray mba hitantanana an'ireo bokotra.")
         
-        # Pop-up 1: Hanampiana pointage isan'andro
-        @st.dialog("📝 Fampidirana Pointage")
+        @st.dialog("📝 Fampidirana Pointage Journalier")
         def ampiditra_pointage_popup(actual_row_idx, mpiasa_anarana):
-            with st.form(key="form_popup_p2_pro_final_v2", clear_on_submit=True):
+            with st.form(key="form_popup_p2_pro_v3", clear_on_submit=True):
                 andro_voafidy = st.selectbox("Safidio ny Andro:", kalandrie_jolay)
                 val_saisie = st.number_input("Isa Saisie:", min_value=0, value=0, step=1)
                 val_comp = st.number_input("Isa Comparaison:", min_value=0, value=0, step=1)
@@ -167,7 +166,7 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                     st.session_state.df_prod.at[actual_row_idx, andro_voafidy] = f"{TAG_SAISIE}{val_saisie}  |  {TAG_COMP}{val_comp}"
                     st.session_state.df_prod.at[actual_row_idx, "Quota Obligatoire"] = quota_change
                     
-                    # RE-CALCUL
+                    # RE-CALCUL AUTOMATIQUE
                     total_saisie_mensuel, total_comp_mensuel, total_saisie_hebdo, total_comp_hebdo = 0, 0, 0, 0
                     for c in kalandrie_jolay:
                         cell_value = st.session_state.df_prod.at[actual_row_idx, c]
@@ -188,13 +187,12 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                     st.session_state.df_prod.at[actual_row_idx, "Total Hebdo (Saisie)"] = total_saisie_hebdo
                     st.session_state.df_prod.at[actual_row_idx, "Total Hebdo (Comp)"] = total_comp_hebdo
                     st.session_state.df_prod.at[actual_row_idx, "Status Prime"] = "✅ OK" if total_saisie_mensuel >= quota_change else "❌ NOK"
-                    st.success("Tafatahiry!")
+                    st.success("Tafatahiry sy voakajy soa aman-tsara!")
                     st.rerun()
 
-        # Pop-up 2: Hanovana ny mombamomba ny mpiasa (Modifier Ligne)
         @st.dialog("✏️ Hanova ny mombamomba ny mpiasa")
         def hanova_mpiasa_popup(actual_row_idx):
-            with st.form(key="form_modifier_worker"):
+            with st.form(key="form_modifier_worker_v3"):
                 new_mat = st.text_input("Matricule:", value=str(st.session_state.df_prod.at[actual_row_idx, "Matricule"]))
                 new_nom = st.text_input("Nom:", value=str(st.session_state.df_prod.at[actual_row_idx, "Nom"]))
                 new_prenom = st.text_input("Prénom:", value=str(st.session_state.df_prod.at[actual_row_idx, "Prénom"]))
@@ -206,8 +204,8 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                     st.success("Voatendry soa aman-tsara!")
                     st.rerun()
 
-        df_short_view = df_prod_all[["Matricule", "Nom", "Prénom", "CE / Département", "Quota Obligatoire", "Status Prime"]]
-        event = st.dataframe(df_short_view, use_container_width=True, hide_index=True, on_select="rerun", selection_mode="single-row")
+        # Eto dia ny tabilao feno misy ny kalandrie rehetra no mipoitra mivantana mba ho hita avokoa ny andro
+        event = st.dataframe(df_prod_all, use_container_width=True, hide_index=True, on_select="rerun", selection_mode="single-row")
         
         if event and "rows" in event.selection and event.selection["rows"]:
             idx = event.selection["rows"][0] if isinstance(event.selection["rows"], list) else event.selection["rows"]
@@ -216,10 +214,10 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
             real_idx = st.session_state.df_prod[st.session_state.df_prod['Matricule'] == row_data['Matricule']].index[0]
             
             st.markdown("---")
+            # Fiarovana: raha tsy mifanaraka ny CE dia tondroina amin'ny hafatra mena
             if ce_mpampiasa != "ADMIN" and row_ce != ce_mpampiasa:
-                st.error(f"❌ Voarara ny fanovana: Mpiasa ao amin'ny **{row_ce}** ity. Ny mpiasa ao amin'ny **{ce_mpampiasa}** ihany no azonao ampidirana data na fafana.")
+                st.error(f"❌ Voarara ny fanovana: Mpiasa ao amin'ny **{row_ce}** ity voafidy ity. Ny mpiasa ao amin'ny **{ce_mpampiasa}** ihany no azonao ampidirana pointage na fafana.")
             else:
-                # Bokotra telo miara-mipoitra ho an'ilay andalana voafidy
                 c1, c2, c3 = st.columns(3)
                 with c1:
                     if st.button("📝 Fampidirana Pointage", use_container_width=True, type="primary"):
