@@ -30,7 +30,6 @@ pejy_voafidy = st.sidebar.radio(
 
 st.sidebar.markdown("---")
 st.sidebar.title("🔐 Zon'ny Mpampiasa (Profil)")
-# Ny rehetra dia afaka mijery ny Global fa ny fanovana no voafetra isaky ny CE
 user_session = st.sidebar.selectbox(
     "Iza no miditra amin'ny site? *",
     ["RH / Admin (Manova Rehetra)", "Responsable CE 1", "Responsable CE 2", "Responsable CE 3", "Responsable CE 4"]
@@ -70,21 +69,17 @@ def convert_df_to_excel(df):
 # ==================================================================
 if pejy_voafidy == "📊 SUIVI RH":
     st.title("📊 Rafitra Fitaovana Suivi RH - Jolay 2026")
-    st.caption(f"Status: **{user_session}** (Afaka mijery ny mpiasa rehetra)")
+    st.caption(f"Status: **{user_session}**")
 
     df_rh_all = st.session_state.df_rh
 
     @st.dialog("➕ Ampidiro ny Mpiasa Vaovao (RH)")
     def ampiditra_rh_form():
-        with st.form(key="form_rh_complete", clear_on_submit=True):
+        with st.form(key="form_rh_complete_v2", clear_on_submit=True):
             mat = st.text_input("Matricule *")
             nom = st.text_input("Nom *")
             prenom = st.text_input("Prénom *")
-            # Raha Responsable CE izy dia ny CE-ny ihany no azony ampidirana mpiasa
-            if ce_mpampiasa != "ADMIN":
-                ce = st.selectbox("CE / Département", [ce_mpampiasa], disabled=True)
-            else:
-                ce = st.selectbox("CE / Département *", ["CE 1", "CE 2", "CE 3", "CE 4"])
+            ce = st.selectbox("CE / Département", [ce_mpampiasa] if ce_mpampiasa != "ADMIN" else ["CE 1", "CE 2", "CE 3", "CE 4"], disabled=(ce_mpampiasa != "ADMIN"))
             submit = st.form_submit_button("Tehirizo ny mpiasa RH", use_container_width=True)
             if submit and mat and nom and prenom:
                 vaovao = {"Matricule": mat, "Nom": nom, "Prénom": prenom, "CE / Département": ce, "Date d'embauche": "2026-07-01", "Type contrat": "CDI", "Fin contrat": "-", "Solde congé": 0, "NB Jour Absence": 0}
@@ -92,60 +87,50 @@ if pejy_voafidy == "📊 SUIVI RH":
                 st.session_state.df_rh = pd.concat([st.session_state.df_rh, pd.DataFrame([vaovao])], ignore_index=True)
                 st.rerun()
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1:
         if st.button("➕ Ajouter mpiasa RH vaovao", use_container_width=True, type="primary"): ampiditra_rh_form()
     with col2:
-        if ce_mpampiasa == "ADMIN" and st.button("🗑️ Reset Tabilao RH (Admin Only)", use_container_width=True):
-            st.session_state.df_rh = pd.DataFrame(columns=st.session_state.df_rh.columns)
-            st.rerun()
-    with col3:
         excel_rh = convert_df_to_excel(df_rh_all)
         st.download_button(label="📥 Télécharger en Excel (RH)", data=excel_rh, file_name="Suivi_RH_Jolay_2026.xlsx", mime="application/vnd.ms-excel", use_container_width=True)
             
     st.markdown("---")
     st.subheader(f"📋 Tabilao Fitantanan-draharaha RH Global ({len(df_rh_all)} mpiasa rehetra)")
-    st.info("💡 Fiarovana: Ny olona rehetra dia afaka mijery ny mpiasa rehetra, fa rehefa tsindrina ny bokotra 'Tehirizo ny fanovana RH' eo ambany, dia ny fanovana mpiasa mifanaraka amin'ny CE-nao ihany no heken'ny rafitra.")
     
     config_colona_rh = {col: st.column_config.SelectboxColumn(options=["Présent", "Absent", "Repos", "Congé"]) for col in kalandrie_jolay}
     edited_rh = st.data_editor(df_rh_all, column_config=config_colona_rh, use_container_width=True, hide_index=True)
     
     if st.button("💾 Tehirizo ny fanovana RH", use_container_width=True, type="secondary"):
-        # Ny rafitra eto dia manivana mba ho ny andalana an'ny CE-ny ihany no havaozina raha tsy ADMIN izy
         for idx, row in edited_rh.iterrows():
             row_ce = df_rh_all.at[idx, "CE / Département"]
             if ce_mpampiasa == "ADMIN" or row_ce == ce_mpampiasa:
                 st.session_state.df_rh.iloc[idx] = edited_rh.iloc[idx]
-        st.success("Tafatahiry soa aman-tsara! (Ny fanovana amin'ny CE-nao ihany no nekena)")
+        st.success("Tafatahiry soa aman-tsara ny fanovana RH nekena!")
         st.rerun()
 # ==================================================================
-# PEJY 2 : SUIVI PROD (VERSION GLOBALEMENT CONSULTABLE)
+# PEJY 2 : SUIVI PROD (VERSION ULTRA-COMPLETE MODIFIER/SUPPRIMER)
 # ==================================================================
 elif pejy_voafidy == "⚙️ SUIVI PROD":
     st.title("⚙️ Rafitra Fitaovana Suivi Production - Jolay 2026")
-    st.caption(f"Status: **{user_session}** (Afaka mijery ny mpiasa rehetra)")
+    st.caption(f"Status: **{user_session}**")
 
     df_prod_all = st.session_state.df_prod
 
-    # ZARAINA HO TABS ROA MADIO NY PEJY
-    tab1, tab2 = st.tabs(["📋 TABILAO GLOBAL (Mijery ny Rehetra)", "📝 AMPIDIRO POINTAGE (Isaky ny CE)"])
+    tab1, tab2 = st.tabs(["📋 TABILAO GLOBAL (Mijery ny Rehetra)", "📝 INTEGRATION POINTAGE & GESTION"])
 
-    # --- TAB 1 : TABILAO GLOBAL (REHETRA REHETRA DIA AFAKA MIJERY) ---
+    # --- TAB 1 : TABILAO GLOBAL ---
     with tab1:
         st.subheader("📋 Tabilao pointage Production Global (Ny mpiasa rehetra)")
         st.markdown(f"**Toro-marika:** &nbsp;&nbsp;&nbsp;&nbsp; {TAG_SAISIE} = **Saisie** &nbsp;&nbsp;|&nbsp;&nbsp; {TAG_COMP} = **Comparaison**")
         
         @st.dialog("➕ Hampiditra Mpiasa ao amin'ny Prod")
         def ampiditra_prod_form():
-            with st.form(key="form_prod_complete_final_p2", clear_on_submit=True):
+            with st.form(key="form_prod_complete_final_p2_v2", clear_on_submit=True):
                 mat = st.text_input("Matricule *")
                 nom = st.text_input("Nom *")
                 prenom = st.text_input("Prénom *")
                 quota_init = st.number_input("Quota holatrarina:", min_value=0, value=1000)
-                if ce_mpampiasa != "ADMIN":
-                    ce = st.selectbox("CE / Département", [ce_mpampiasa], disabled=True)
-                else:
-                    ce = st.selectbox("CE / Département *", ["CE 1", "CE 2", "CE 3", "CE 4"])
+                ce = st.selectbox("CE / Département", [ce_mpampiasa] if ce_mpampiasa != "ADMIN" else ["CE 1", "CE 2", "CE 3", "CE 4"], disabled=(ce_mpampiasa != "ADMIN"))
                 submit = st.form_submit_button("Tehirizo ny mpiasa vaovao", use_container_width=True)
                 if submit and mat and nom and prenom:
                     vaovao = {"Matricule": mat, "Nom": nom, "Prénom": prenom, "CE / Département": ce, "Total Mensuel (Saisie)": 0, "Total Mensuel (Comp)": 0, "Total Hebdo (Saisie)": 0, "Total Hebdo (Comp)": 0, "Quota Obligatoire": quota_init, "Status Prime": "❌ NOK"}
@@ -153,42 +138,36 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                     st.session_state.df_prod = pd.concat([st.session_state.df_prod, pd.DataFrame([vaovao])], ignore_index=True)
                     st.rerun()
 
-        col1, col2, col3 = st.columns(3)
-        with col1:
+        col_add, col_xlsx = st.columns(2)
+        with col_add:
             if st.button("➕ Ajouter mpiasa Prod vaovao", use_container_width=True, type="primary"): ampiditra_prod_form()
-        with col2:
-            if ce_mpampiasa == "ADMIN" and st.button("🗑️ Reset Tabilao Prod (Admin Only)", use_container_width=True):
-                st.session_state.df_prod = pd.DataFrame(columns=st.session_state.df_prod.columns)
-                st.rerun()
-        with col3:
-            # Fitaovana mampidina Excel ho an'ny Prod Global
+        with col_xlsx:
             excel_prod = convert_df_to_excel(df_prod_all)
             st.download_button(label="📥 Télécharger en Excel (Prod)", data=excel_prod, file_name="Suivi_Production_Jolay_2026.xlsx", mime="application/vnd.ms-excel", use_container_width=True)
 
         st.markdown("---")
-        # Eto dia ny mpiasa 1000 manontolo (Global) no mipoitra ho an'ny rehetra jerena
         st.dataframe(df_prod_all, use_container_width=True, hide_index=True)
 
-    # --- TAB 2 : AMPIDIRO POINTAGE (FIAROVANA REHEFA HANAMPY DATA) ---
+    # --- TAB 2 : GESTION PAR LIGNE (POINTAGE / MODIFIER / SUPPRIMER) ---
     with tab2:
-        st.subheader("📝 Fampidirana Pointage Journalier Production")
-        st.info(f"💡 Fiarovana: Ny mpiasa rehetra no hita eo amin'ny tabilao, saingy ny mpiasa ao amin'ny CE-nao ihany no azonao ampidirana pointage.")
-        st.write("Kitiho ny boribory kely eo ankavian'ny andalana misy mpiasa iray mba hampidirana pointage.")
+        st.subheader("📝 Fitantanana sy Fampidirana Pointage isan-andalana")
+        st.write("💡 Kitiho ny boribory kely eo ankavian'ny andalana misy mpiasa iray mba hitantanana ny mombamomba azy.")
         
+        # Pop-up 1: Hanampiana pointage isan'andro
         @st.dialog("📝 Fampidirana Pointage")
         def ampiditra_pointage_popup(actual_row_idx, mpiasa_anarana):
-            with st.form(key="form_popup_p2_pro_secured_final", clear_on_submit=True):
+            with st.form(key="form_popup_p2_pro_final_v2", clear_on_submit=True):
                 andro_voafidy = st.selectbox("Safidio ny Andro:", kalandrie_jolay)
                 val_saisie = st.number_input("Isa Saisie:", min_value=0, value=0, step=1)
                 val_comp = st.number_input("Isa Comparaison:", min_value=0, value=0, step=1)
-                quota_change = st.number_input("Quota holatrarina?", min_value=0, value=int(st.session_state.df_prod.at[actual_row_idx, "Quota Obligatoire"]))
+                quota_change = st.number_input("Quota?", min_value=0, value=int(st.session_state.df_prod.at[actual_row_idx, "Quota Obligatoire"]))
                 submit_pointage = st.form_submit_button("💾 Tehirizo ity pointage ity", use_container_width=True)
                 
                 if submit_pointage:
                     st.session_state.df_prod.at[actual_row_idx, andro_voafidy] = f"{TAG_SAISIE}{val_saisie}  |  {TAG_COMP}{val_comp}"
                     st.session_state.df_prod.at[actual_row_idx, "Quota Obligatoire"] = quota_change
                     
-                    # RE-CALCUL AUTOMATIQUE
+                    # RE-CALCUL
                     total_saisie_mensuel, total_comp_mensuel, total_saisie_hebdo, total_comp_hebdo = 0, 0, 0, 0
                     for c in kalandrie_jolay:
                         cell_value = st.session_state.df_prod.at[actual_row_idx, c]
@@ -204,30 +183,52 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                                     total_saisie_hebdo += s_val
                                     total_comp_hebdo += c_val
                             except: pass
-                    
                     st.session_state.df_prod.at[actual_row_idx, "Total Mensuel (Saisie)"] = total_saisie_mensuel
                     st.session_state.df_prod.at[actual_row_idx, "Total Mensuel (Comp)"] = total_comp_mensuel
                     st.session_state.df_prod.at[actual_row_idx, "Total Hebdo (Saisie)"] = total_saisie_hebdo
                     st.session_state.df_prod.at[actual_row_idx, "Total Hebdo (Comp)"] = total_comp_hebdo
                     st.session_state.df_prod.at[actual_row_idx, "Status Prime"] = "✅ OK" if total_saisie_mensuel >= quota_change else "❌ NOK"
-                    st.success("Tafatahiry sy voakajy soa aman-tsara!")
+                    st.success("Tafatahiry!")
                     st.rerun()
 
-        # Fampisehoana ny tabilao fohy ho an'ny mpiasa rehetra (Global)
+        # Pop-up 2: Hanovana ny mombamomba ny mpiasa (Modifier Ligne)
+        @st.dialog("✏️ Hanova ny mombamomba ny mpiasa")
+        def hanova_mpiasa_popup(actual_row_idx):
+            with st.form(key="form_modifier_worker"):
+                new_mat = st.text_input("Matricule:", value=str(st.session_state.df_prod.at[actual_row_idx, "Matricule"]))
+                new_nom = st.text_input("Nom:", value=str(st.session_state.df_prod.at[actual_row_idx, "Nom"]))
+                new_prenom = st.text_input("Prénom:", value=str(st.session_state.df_prod.at[actual_row_idx, "Prénom"]))
+                save_mod = st.form_submit_button("💾 Tehirizo ny fanovana mombamomba", use_container_width=True)
+                if save_mod:
+                    st.session_state.df_prod.at[actual_row_idx, "Matricule"] = new_mat
+                    st.session_state.df_prod.at[actual_row_idx, "Nom"] = new_nom
+                    st.session_state.df_prod.at[actual_row_idx, "Prénom"] = new_prenom
+                    st.success("Voatendry soa aman-tsara!")
+                    st.rerun()
+
         df_short_view = df_prod_all[["Matricule", "Nom", "Prénom", "CE / Département", "Quota Obligatoire", "Status Prime"]]
         event = st.dataframe(df_short_view, use_container_width=True, hide_index=True, on_select="rerun", selection_mode="single-row")
         
         if event and "rows" in event.selection and event.selection["rows"]:
             idx = event.selection["rows"][0] if isinstance(event.selection["rows"], list) else event.selection["rows"]
             row_data = df_prod_all.iloc[idx]
-            
-            mpiasa_nom = f"{row_data['Nom']} {row_data['Prénom']}"
             row_ce = row_data['CE / Département']
+            real_idx = st.session_state.df_prod[st.session_state.df_prod['Matricule'] == row_data['Matricule']].index[0]
             
             st.markdown("---")
-            # HAMARININA NY CONDITION FIAROVANA: Raha tsy mitovy ny CE dia lavina ny fidirana amin'ny Pop-up
             if ce_mpampiasa != "ADMIN" and row_ce != ce_mpampiasa:
-                st.error(f"❌ Voarara: Mpiasa ao amin'ny **{row_ce}** ity voafididy ity. Ny mpiasa ao amin'ny **{ce_mpampiasa}** ihany no manana alalana hovainao.")
+                st.error(f"❌ Voarara ny fanovana: Mpiasa ao amin'ny **{row_ce}** ity. Ny mpiasa ao amin'ny **{ce_mpampiasa}** ihany no azonao ampidirana data na fafana.")
             else:
-                if st.button(f"📝 Hanampy Pointage ho an'i {mpiasa_nom} ({row_ce})", type="primary", use_container_width=True):
-                    ampiditra_pointage_popup(idx, mpiasa_nom)
+                # Bokotra telo miara-mipoitra ho an'ilay andalana voafidy
+                c1, c2, c3 = st.columns(3)
+                with c1:
+                    if st.button("📝 Fampidirana Pointage", use_container_width=True, type="primary"):
+                        ampiditra_pointage_popup(real_idx, f"{row_data['Nom']} {row_data['Prénom']}")
+                with c2:
+                    if st.button("✏️ Hanova Mpiasa (Modifier)", use_container_width=True):
+                        hanova_mpiasa_popup(real_idx)
+                with c3:
+                    if st.button("🗑️ Hamafa ity mpiasa ity (Supprimer)", use_container_width=True):
+                        st.session_state.df_prod = st.session_state.df_prod.drop(real_idx).reset_index(drop=True)
+                        st.success("Voafafa soa aman-tsara ilay andalana!")
+                        st.rerun()
