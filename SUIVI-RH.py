@@ -77,7 +77,7 @@ if pejy_voafidy == "📊 SUIVI RH":
 
     @st.dialog("➕ Ampidiro ny Mpiasa Vaovao (RH)")
     def ampiditra_rh_form():
-        with st.form(key="form_rh_v7", clear_on_submit=True):
+        with st.form(key="form_rh_v8", clear_on_submit=True):
             mat = st.text_input("Matricule *")
             nom = st.text_input("Nom *")
             prenom = st.text_input("Prénom *")
@@ -117,7 +117,6 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
     st.caption(f"Status: **{user_session}**")
 
     df_prod_all = st.session_state.df_prod
-    df_prod_filtered = df_prod_all[df_prod_all["CE / Département"] == ce_mpampiasa] if ce_mpampiasa != "ADMIN" else df_prod_all
 
     tab1, tab2 = st.tabs(["📋 TABILAO GLOBAL (Mijery ny Rehetra)", "📝 INTEGRATION & IMPORTATION EXCEL"])
 
@@ -128,7 +127,7 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
         
         @st.dialog("➕ Hampiditra Mpiasa ao amin'ny Prod")
         def ampiditra_prod_form():
-            with st.form(key="form_prod_p2_v7", clear_on_submit=True):
+            with st.form(key="form_prod_p2_v8_complete", clear_on_submit=True):
                 mat = st.text_input("Matricule *")
                 nom = st.text_input("Nom *")
                 prenom = st.text_input("Prénom *")
@@ -150,7 +149,7 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
 
         st.markdown("---")
         st.dataframe(df_prod_all, use_container_width=True, hide_index=True)
-    # --- TAB 2 : GESTION & IMPORTATION EXCEL ---
+    # --- TAB 2 : GESTION & IMPORTATION EXCEL (VERSION RE-CORRIGEE 100%) ---
     with tab2:
         st.subheader("🚀 Fampidirana Pointage mandeha ho azy amin'ny Excel")
         st.write("Mampidira fichier Excel misy tsanganana `Date du traitement`, `Identifiant`, `Opérations`, ary `Total actes` mba hamenoana ny tabilao ho azy.")
@@ -197,7 +196,6 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                                 current_val = str(st.session_state.df_prod.at[idx_state, target_col]).strip()
                                 s_current, c_current = 0, 0
                                 
-                                # LANJA FIAROVANA: Fafana ny kisary taloha raha mbola nisy "1" teo aloha
                                 if "|" in current_val:
                                     try:
                                         p_parts = current_val.split("|")
@@ -207,7 +205,6 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                                     
                                 op_type = str(row['Opérations']).strip().lower()
                                 
-                                # FIAROVANA ULTRA-PRO: Avadika ho isa madio na inona na inona endriny ao amin'ny Excel
                                 try:
                                     act_value = int(float(str(row['Total actes']).strip()))
                                 except:
@@ -258,7 +255,7 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
         
         @st.dialog("📝 Fampidirana Pointage Journalier Manuelle")
         def ampiditra_pointage_popup(actual_row_idx, mpiasa_anarana):
-            with st.form(key="form_popup_p2_v7_man_fixed", clear_on_submit=True):
+            with st.form(key="form_popup_p2_v8_man_fixed", clear_on_submit=True):
                 andro_voafidy = st.selectbox("Safidio ny Andro:", kalandrie_jolay)
                 val_saisie = st.number_input("Isa Saisie:", min_value=0, value=0, step=1)
                 val_comp = st.number_input("Isa Comparaison:", min_value=0, value=0, step=1)
@@ -271,17 +268,22 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                     st.success("Voatahiry!")
                     st.rerun()
 
-        event = st.dataframe(df_prod_filtered, use_container_width=True, hide_index=True, on_select="rerun", selection_mode="single-row")
+        # Fampisehoana ny tabilao feno
+        event = st.dataframe(st.session_state.df_prod, use_container_width=True, hide_index=True, on_select="rerun", selection_mode="single-row")
         
         if event and "rows" in event.selection and event.selection["rows"]:
             idx = event.selection["rows"]
-            row_data = df_prod_filtered.iloc[idx]
-            row_ce = row_data['CE / Département']
-            real_idx = st.session_state.df_prod[st.session_state.df_prod['Matricule'] == row_data['Matricule']].index
-            
-            st.markdown("---")
-            if ce_mpampiasa != "ADMIN" and row_ce != ce_mpampiasa:
-                st.error(f"❌ Voarara ny fanovana: Mpiasa ao amin'ny **{row_ce}** ity. Ny mpiasa ao amin'ny **{ce_mpampiasa}** ihany no azonao ampidirana pointage.")
-            else:
-                if st.button(f"📝 Hanampy Pointage ho an'i {row_data['Nom']} {row_data['Prénom']}", type="primary", use_container_width=True):
-                    ampiditra_pointage_popup(real_idx, f"{row_data['Nom']} {row_data['Prénom']}")
+            # NAMBOARINA NY EXTRACTION INDEX MBA TSY HISY VALUEERROR INTSONY
+            if len(idx) > 0:
+                real_idx = idx[0]
+                row_data = st.session_state.df_prod.iloc[real_idx]
+                row_ce = row_data['CE / Département']
+                mpiasa_nom = f"{row_data['Nom']} {row_data['Prénom']}"
+                
+                st.markdown("---")
+                # NY FIAROVANA SY NY CONDITION MATANJAKA:
+                if ce_mpampiasa != "ADMIN" and row_ce != ce_mpampiasa:
+                    st.error(f"❌ Voarara ny fanovana: Mpiasa ao amin'ny **{row_ce}** i {mpiasa_nom}. Ny mpiasa ao amin'ny **{ce_mpampiasa}** ihany no azonao ampidirana pointage.")
+                else:
+                    if st.button(f"📝 Hanampy Pointage ho an'i {mpiasa_nom}", type="primary", use_container_width=True):
+                        ampiditra_pointage_popup(real_idx, mpiasa_nom)
