@@ -24,7 +24,8 @@ def load_initial_data():
         "Fin contrat": np.random.choice(["-", "2026-12-31", "2027-06-30"], size=isa_mpiasa),
         "CE / Département": np.random.choice(["CE 1", "CE 2", "CE 3", "CE 4"], size=isa_mpiasa),
         "Solde congé": np.random.randint(0, 30, size=isa_mpiasa),
-        "NB Jour Absence": np.random.randint(0, 5, size=size=isa_mpiasa)
+        "NB Jour Absence": np.random.randint(0, 5, size=isa_mpiasa)
+
     }
     
     # Manampy ny andro 1 hatramin'ny 31 ho an'ny Jolay
