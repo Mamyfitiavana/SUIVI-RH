@@ -333,4 +333,4 @@ elif pejy_voafidy == "⚙️ SUIVI PROD":
                         if st.button("🗑️ Hamafa ity mpiasa ity (Supprimer)", use_container_width=True):
                             st.session_state.df_prod = st.session_state.df_prod.drop(real_idx).reset_index(drop=True)
                             st.success("Voafafa soa aman-tsara ilay andalana!")
-        st.return()                    
+                       
